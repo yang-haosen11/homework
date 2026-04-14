@@ -11,7 +11,7 @@
 
 \author{%
   Your Name \\
-  Department of Computer Science\\
+  Undergraduate Student, Department of Computer Science\\
   Your University\\
   \texttt{yourName@xxx.edu.cn} \\
 }
@@ -22,10 +22,10 @@
 \begin{abstract}
 Block stacking is a classic manipulation task that requires a robot to pick up a set of cubes and place them one on top of another to form a stable tower.
 Solving this task cleanly exposes the core challenges of robotic manipulation: object pose estimation, grasp planning, collision-free motion planning, and reactive control.
-In this report we study how to implement a block-stacking pipeline using a robot arm equipped with a parallel-jaw gripper under progressively relaxed assumptions.
-We first present a structured pseudo-code solution that relies on off-the-shelf motion planners and discusses the arguments needed at each API call.
-We then address a practical collision issue that arises when planning directly to a grasp pose, and propose a simple pre-grasp waypoint strategy to resolve it.
-Finally, we discuss how to extend the system to an unconstrained setting where cube poses are unknown and must be estimated online with a depth camera, identifying the essential perception, planning, and control modules required for robust task completion.
+In this report, I study how to implement a block-stacking pipeline using a robot arm equipped with a parallel-jaw gripper under progressively relaxed assumptions.
+I first present a structured pseudo-code solution that relies on off-the-shelf motion planners and discuss the arguments needed at each API call.
+I then address a practical collision issue that arises when planning directly to a grasp pose, and propose a simple pre-grasp waypoint strategy to resolve it.
+Finally, I discuss how to extend the system to an unconstrained setting where cube poses are unknown and must be estimated online with a depth camera, identifying the essential perception, planning, and control modules required for robust task completion.
 \end{abstract}
 
 
@@ -36,7 +36,7 @@ Block stacking is a foundational benchmark in robot manipulation research.
 Given $N$ cubes placed at known (or unknown) positions on a table, the robot must pick them up in order and stack them to form a tower of height $N$.
 Despite its apparent simplicity, the task exercises the full manipulation pipeline: workspace sensing, grasp planning, collision-free motion planning, and execution feedback.
 
-In the following sections we address three questions.
+In the following sections, I address three questions.
 \Cref{sec:pseudocode} presents a complete pseudo-code solution assuming cube poses are known.
 \Cref{sec:collision} proposes a simple strategy to avoid end-effector collisions during cube grasping.
 \Cref{sec:depth} discusses the additional modules needed when cube poses are unknown and a depth camera is the primary sensor.
@@ -44,7 +44,7 @@ In the following sections we address three questions.
 \section{Pseudo code for block stacking}
 \label{sec:pseudocode}
 
-We assume the robot has a 6-DoF arm with a parallel-jaw gripper, that the 6-DoF pose of every cube is known in the robot base frame, and that the arm's forward/inverse kinematics are available.
+I assume the robot has a 6-DoF arm with a parallel-jaw gripper, that the 6-DoF pose of every cube is known in the robot base frame, and that the arm's forward/inverse kinematics are available.
 The core API is \texttt{motion\_plan}, whose signature and semantics are described below; all other helper functions are thin wrappers around standard robot-middleware calls.
 
 \paragraph{Key API: \texttt{motion\_plan}}

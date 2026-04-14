@@ -44,7 +44,7 @@ In the following sections we address three questions.
 \section{Pseudo code for block stacking}
 \label{sec:pseudocode}
 
-We assume the robot has a 6-\dof arm with a parallel-jaw gripper, that the 6-DoF pose of every cube is known in the robot base frame, and that the arm's forward/inverse kinematics are available.
+We assume the robot has a 6-DoF arm with a parallel-jaw gripper, that the 6-DoF pose of every cube is known in the robot base frame, and that the arm's forward/inverse kinematics are available.
 The core API is \texttt{motion\_plan}, whose signature and semantics are described below; all other helper functions are thin wrappers around standard robot-middleware calls.
 
 \paragraph{Key API: \texttt{motion\_plan}}
@@ -71,6 +71,7 @@ trajectory = motion_plan(
   \item \texttt{get\_object\_pose(obj)} $\to T_\text{obj} \in SE(3)$: returns the 6-DoF pose of \texttt{obj} in the robot base frame.
   \item \texttt{compute\_grasp\_pose(T\_cube, gripper\_depth)} $\to T_\text{grasp}$: offsets the cube centre upward by half the cube height and back by \texttt{gripper\_depth} along the approach axis; adds a fixed wrist orientation (gripper fingers horizontal, approaching from above).
   \item \texttt{compute\_pre\_grasp\_pose(T\_grasp, approach\_offset)} $\to T_\text{pre}$: translates $T_\text{grasp}$ by \texttt{approach\_offset} ($\sim$\,10--15\,cm) along the gripper approach axis (\ie, straight up for a top-down grasp).
+  \item \texttt{compute\_pre\_place\_pose(T\_place, approach\_offset)} $\to T_\text{pre\_place}$: analogous to \texttt{compute\_pre\_grasp\_pose} but applied to the placement pose; translates $T_\text{place}$ upward by \texttt{approach\_offset} to produce a safe above-stack waypoint before lowering.
   \item \texttt{compute\_place\_pose(T\_stack\_base, stack\_height, cube\_size)} $\to T_\text{place}$: adds $\texttt{stack\_height} \times \texttt{cube\_size}$ to the $z$-component of the stack base pose.
   \item \texttt{gripper\_close()} / \texttt{gripper\_open()}: command the gripper to close/open.
   \item \texttt{update\_collision\_scene(obj, new\_pose)}: informs the motion planner that \texttt{obj} has moved to \texttt{new\_pose} (or has been attached to / detached from the gripper).
@@ -98,7 +99,7 @@ trajectory = motion_plan(
   \STATE \COMMENT{Lift straight up back to pre-grasp height}
   \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{grasp}$, $T_\text{pre}$, $\mathcal{S}$, \texttt{CARTESIAN}))
   \STATE $T_\text{place} \leftarrow$ \texttt{compute\_place\_pose}$(T_\text{base},\ i-1,\ s)$
-  \STATE $T_\text{pre\_place} \leftarrow$ \texttt{compute\_pre\_grasp\_pose}$(T_\text{place},\ \textit{approach\_offset})$
+  \STATE $T_\text{pre\_place} \leftarrow$ \texttt{compute\_pre\_place\_pose}$(T_\text{place},\ \textit{approach\_offset})$
   \STATE \COMMENT{Carry cube to pre-place waypoint (free-space, orientation locked)}
   \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{pre}$, $T_\text{pre\_place}$, $\mathcal{S}$, \texttt{FREE}, \textit{orientation\_lock}))
   \STATE \COMMENT{Lower straight down to place pose}
@@ -151,7 +152,7 @@ The following essential modules and procedures are required.
 
   \item \textbf{6-DoF object pose estimation.}
         For each cube cluster, a pose estimation module fits a known CAD model (a cube of known side length $s$) to the cluster, yielding a 6-DoF pose $T_\text{cube}$.
-        Classical approaches use iterative closest point (ICP); learning-based approaches (\eg, FoundPose, FFB6D) are more robust to partial occlusion.
+        Classical approaches use iterative closest point (ICP); learning-based approaches (\eg, FoundationPose, FFB6D) are more robust to partial occlusion.
 
   \item \textbf{Collision map construction.}
         The full point cloud (excluding the detected cubes) is voxelised into an occupancy grid or OctoMap and fed to the motion planner as the collision scene, enabling obstacle-aware path planning without manual scene description.

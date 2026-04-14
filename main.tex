@@ -7,150 +7,180 @@
 \usepackage[final]{template22}
 \input{config.tex}
 
-\title{\LaTeX{} Template for Course Project}
+\title{Block Stacking with Robot Motion Planners}
 
 \author{%
-  Your Name\thanks{Use footnote for providing further information
-    about author (webpage, co-first authors, \etc).} \\
-  Department of xxx\\
+  Your Name \\
+  Department of Computer Science\\
   Your University\\
   \texttt{yourName@xxx.edu.cn} \\
-  % examples of more authors
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \AND
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
-  % \And
-  % Coauthor \\
-  % Affiliation \\
-  % Address \\
-  % \texttt{email} \\
 }
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-The abstract must be limited to one paragraph; see an annotated \href{https://cbs.umn.edu/sites/cbs.umn.edu/files/public/downloads/Annotated_Nature_abstract.pdf}{Nature abstract} as the guideline. In particular, you will need one or two sentences providing a basic introduction to the field, comprehensible to a scientist in any discipline. Next, provide two to three sentences of more detailed background, comprehensible to scientists in related disciplines. The next two sentences are probably the most essential one in the abstract: One sentence clearly stating the general problem being addressed by this particular study, and one sentence summarising the main result (with the words ``here we show'' or their equivalent). The rest are detailed analysis of results: (i) Two or three sentences explaining what the main result reveals in direct comparison to what was thought to be the case previously, or how the main result adds to previous knowledge. (ii) One or two sentences to put the results into a more general context. (iii) Two or three sentences to provide a broader perspective, readily comprehensible to a scientist in any discipline, may be included in the first paragraph if the editor considers that the accessibility of the paper is significantly enhanced by their inclusion. Under these circumstances, the length of the paragraph can be up to 300 words.
+Block stacking is a classic manipulation task that requires a robot to pick up a set of cubes and place them one on top of another to form a stable tower.
+Solving this task cleanly exposes the core challenges of robotic manipulation: object pose estimation, grasp planning, collision-free motion planning, and reactive control.
+In this report we study how to implement a block-stacking pipeline using a robot arm equipped with a parallel-jaw gripper under progressively relaxed assumptions.
+We first present a structured pseudo-code solution that relies on off-the-shelf motion planners and discusses the arguments needed at each API call.
+We then address a practical collision issue that arises when planning directly to a grasp pose, and propose a simple pre-grasp waypoint strategy to resolve it.
+Finally, we discuss how to extend the system to an unconstrained setting where cube poses are unknown and must be estimated online with a depth camera, identifying the essential perception, planning, and control modules required for robust task completion.
 \end{abstract}
 
 
 \section{Introduction}
 \label{sec:introduction}
 
+Block stacking is a foundational benchmark in robot manipulation research.
+Given $N$ cubes placed at known (or unknown) positions on a table, the robot must pick them up in order and stack them to form a tower of height $N$.
+Despite its apparent simplicity, the task exercises the full manipulation pipeline: workspace sensing, grasp planning, collision-free motion planning, and execution feedback.
 
-This provides the \LaTeX{} template for project report. Please read the instructions carefully and follow them faithfully.
+In the following sections we address three questions.
+\Cref{sec:pseudocode} presents a complete pseudo-code solution assuming cube poses are known.
+\Cref{sec:collision} proposes a simple strategy to avoid end-effector collisions during cube grasping.
+\Cref{sec:depth} discusses the additional modules needed when cube poses are unknown and a depth camera is the primary sensor.
 
-\section{Headings: first level}\label{sec:headings}
+\section{Pseudo code for block stacking}
+\label{sec:pseudocode}
 
-All headings should be lower case (except for first word and proper nouns).
+We assume the robot has a 6-\dof arm with a parallel-jaw gripper, that the 6-DoF pose of every cube is known in the robot base frame, and that the arm's forward/inverse kinematics are available.
+The core API is \texttt{motion\_plan}, whose signature and semantics are described below; all other helper functions are thin wrappers around standard robot-middleware calls.
 
-\subsection{Headings: second level}
+\paragraph{Key API: \texttt{motion\_plan}}
+\begin{verbatim}
+trajectory = motion_plan(
+    start,            # current joint configuration q_start (or "current")
+    goal,             # target end-effector pose T_goal (SE(3)) or joint config
+    collision_scene,  # list of collision objects currently in the workspace
+    motion_type,      # FREE (joint-space RRT/PRM) | CARTESIAN (line in task space)
+    constraints       # optional: orientation lock, joint limits, etc.
+)
+\end{verbatim}
 
-This is a second-level heading.
+\noindent\textbf{Arguments.}
+\textit{start} and \textit{goal} define the boundary conditions of the plan.
+\textit{goal} is usually expressed as a target end-effector pose $T \in SE(3)$ that is first solved for joint angles via inverse kinematics; alternatively a joint configuration $\mathbf{q}$ can be passed directly.
+\textit{collision\_scene} is a list of axis-aligned bounding boxes (or mesh primitives) for every rigid body in the scene---table, cubes not yet grasped, cubes already stacked.
+\textit{motion\_type} selects the planner: \texttt{FREE} uses a sampling-based planner (\eg, RRT-Connect) for unconstrained free-space motion; \texttt{CARTESIAN} generates a straight-line interpolated path in task space for approach and retreat strokes.
+\textit{constraints} may impose, \eg, a fixed wrist orientation to keep the gripper level while carrying a cube.
 
-\subsubsection{Headings: third level}
+\paragraph{Helper functions.}
 
-This is a third-level heading.
-
-\paragraph{Paragraphs}
-
-There is also a \verb+\paragraph+ command available.
-
-\section{Citations, figures, tables, references}\label{sec:others}
-
-These instructions apply to everyone.
-
-\subsection{Citations within the text}
-
-This is an citation example \citep{zhu2020dark}. You can also cite in the author-year format by using \citet{zhu2020dark}. Please list all your references into \verb+reference.bib+, and add the citation with command \verb+\citep{}+ or \verb+\citet{}+. Of note, bibtex directly exported by Google Scholar oftentimes has errors:
-\begin{itemize}[leftmargin=*,noitemsep,nolistsep,topsep=0pt]
-    \item ICLR conference papers usually are displayed as arXiv papers. You should correct in the bibtex.
-    \item Some papers do have both arXiv version and published version. Click on all versions in Google Scholar, and only use the published version.
-    \item Some books were wrongly classified as article in Google Scholar. Please manually change it to book when cite.
-    \item Some book chapters were wrongly classified as article in Google Scholar. Please use incollection to properly cite.
+\begin{itemize}[leftmargin=*,noitemsep,topsep=0pt]
+  \item \texttt{get\_object\_pose(obj)} $\to T_\text{obj} \in SE(3)$: returns the 6-DoF pose of \texttt{obj} in the robot base frame.
+  \item \texttt{compute\_grasp\_pose(T\_cube, gripper\_depth)} $\to T_\text{grasp}$: offsets the cube centre upward by half the cube height and back by \texttt{gripper\_depth} along the approach axis; adds a fixed wrist orientation (gripper fingers horizontal, approaching from above).
+  \item \texttt{compute\_pre\_grasp\_pose(T\_grasp, approach\_offset)} $\to T_\text{pre}$: translates $T_\text{grasp}$ by \texttt{approach\_offset} ($\sim$\,10--15\,cm) along the gripper approach axis (\ie, straight up for a top-down grasp).
+  \item \texttt{compute\_place\_pose(T\_stack\_base, stack\_height, cube\_size)} $\to T_\text{place}$: adds $\texttt{stack\_height} \times \texttt{cube\_size}$ to the $z$-component of the stack base pose.
+  \item \texttt{gripper\_close()} / \texttt{gripper\_open()}: command the gripper to close/open.
+  \item \texttt{update\_collision\_scene(obj, new\_pose)}: informs the motion planner that \texttt{obj} has moved to \texttt{new\_pose} (or has been attached to / detached from the gripper).
 \end{itemize}
-The reference.bib file offers some examples.
 
-Please use \verb+\ac{}+ and its package to properly manage acronym. For instance, you can directly use \ac{pku}; this will give both full names and its acronym. The next time when you use it, \ac{pku}, it will only show the acronym. You can tell the package that you want the full name, \acf{pku}, its short form, \acs{pku}, or its long form, \acl{pku}. It also provides a way to give you the plural form, \eg, \acp{pku}, \aclp{pku}; note that some may not be grammatically correct, and you should use it properly.
+\paragraph{Pseudo code.}
 
-\subsection{Footnotes}
+\Cref{alg:block_stacking} gives the complete procedure for stacking $N$ cubes.
 
-Footnotes should be used sparingly.  If you do require a footnote, indicate footnotes with a number\footnote{Sample of the first footnote.} in the text.
+\begin{algorithm}[t]
+\caption{Block stacking with a robot arm}
+\label{alg:block_stacking}
+\begin{algorithmic}[1]
+\REQUIRE cube list $\mathcal{C} = [c_1, \ldots, c_N]$, stack base pose $T_\text{base}$, cube size $s$
+\FOR{$i = 1$ \TO $N$}
+  \STATE $T_\text{cube} \leftarrow$ \texttt{get\_object\_pose}$(c_i)$
+  \STATE $T_\text{grasp} \leftarrow$ \texttt{compute\_grasp\_pose}$(T_\text{cube},\ \textit{gripper\_depth})$
+  \STATE $T_\text{pre} \leftarrow$ \texttt{compute\_pre\_grasp\_pose}$(T_\text{grasp},\ \textit{approach\_offset})$
+  \STATE \COMMENT{Move to pre-grasp waypoint (free-space planning, avoid all objects)}
+  \STATE \texttt{execute}(\texttt{motion\_plan}(\texttt{``current''}, $T_\text{pre}$, $\mathcal{S}$, \texttt{FREE}))
+  \STATE \COMMENT{Straight-line descent to grasp pose (Cartesian, no cube in collision set)}
+  \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{pre}$, $T_\text{grasp}$, $\mathcal{S} \setminus \{c_i\}$, \texttt{CARTESIAN}))
+  \STATE \texttt{gripper\_close}()
+  \STATE \texttt{update\_collision\_scene}$(c_i,\ \text{attach to gripper})$
+  \STATE \COMMENT{Lift straight up back to pre-grasp height}
+  \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{grasp}$, $T_\text{pre}$, $\mathcal{S}$, \texttt{CARTESIAN}))
+  \STATE $T_\text{place} \leftarrow$ \texttt{compute\_place\_pose}$(T_\text{base},\ i-1,\ s)$
+  \STATE $T_\text{pre\_place} \leftarrow$ \texttt{compute\_pre\_grasp\_pose}$(T_\text{place},\ \textit{approach\_offset})$
+  \STATE \COMMENT{Carry cube to pre-place waypoint (free-space, orientation locked)}
+  \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{pre}$, $T_\text{pre\_place}$, $\mathcal{S}$, \texttt{FREE}, \textit{orientation\_lock}))
+  \STATE \COMMENT{Lower straight down to place pose}
+  \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{pre\_place}$, $T_\text{place}$, $\mathcal{S}$, \texttt{CARTESIAN}))
+  \STATE \texttt{gripper\_open}()
+  \STATE \texttt{update\_collision\_scene}$(c_i,\ T_\text{place})$
+  \STATE $\mathcal{S} \leftarrow \mathcal{S} \cup \{c_i\ \text{at}\ T_\text{place}\}$
+  \STATE \COMMENT{Retreat straight upward before next pick}
+  \STATE \texttt{execute}(\texttt{motion\_plan}($T_\text{place}$, $T_\text{pre\_place}$, $\mathcal{S}$, \texttt{CARTESIAN}))
+\ENDFOR
+\end{algorithmic}
+\end{algorithm}
 
-Note that footnotes are properly typeset \emph{after} punctuation
-marks.\footnote{As in this example.}
+\paragraph{Argument computation.}
+The grasp pose $T_\text{grasp}$ is computed so that the gripper centre aligns with the cube centre in $x$ and $y$, is raised by $s/2$ in $z$ (top-face contact), and approaches from directly above (rotation: gripper $z$-axis pointing downward).
+The pre-grasp offset is chosen large enough to clear the cube geometry---typically $0.10$--$0.15$\,m along the approach axis.
+The place pose $z$-offset is $(i-1) \cdot s$, stacking cubes flush with no gap.
+The collision scene $\mathcal{S}$ is updated after every gripper action so subsequent plans respect the new configuration; when a cube is attached to the gripper it is removed from the free-object list and treated as part of the robot body.
 
-\begin{figure}[t!]
-     \centering
-     \begin{subfigure}[b]{0.48\linewidth}
-        \centering
-        \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-        \caption{\textbf{Subfigure 1}. This is what you should write to explain this subfigure.}
-        \label{fig:sub1}
-     \end{subfigure}%
-     \hfill%
-     \begin{subfigure}[b]{0.48\linewidth}
-        \centering
-        \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-        \caption{\textbf{Subfigure 2}. This is what you should write to explain this subfigure.}
-        \label{fig:sub2}
-     \end{subfigure}
-     \caption{\textbf{Figure caption.} The figure caption goes here.}
-\end{figure}
 
-\subsection{Figures}
+\section{Avoiding end-effector collision when grasping}
+\label{sec:collision}
 
-All artwork must be neat, clean, and legible. Lines should be dark enough for purposes of reproduction. The figure number and caption always appear after the figure. The figure caption should be lower case (except for first word and proper nouns); figures are numbered consecutively. 
+Planning directly from the robot's current pose to the grasp pose $T_\text{grasp}$ allows the sampling-based planner to generate paths that approach the cube from the side or from below, causing the gripper fingers to collide with the cube body before closing.
 
-Please place your figure files into the \verb+figures/+ folder. An example figure is shown in \cref{fig:sample}. You can also use subfigures, \eg, \cref{fig:sub1,fig:sub2}.
+\paragraph{Pre-grasp waypoint strategy.}
+The simplest and most effective remedy is to insert a \emph{pre-grasp waypoint} $T_\text{pre}$, obtained by translating $T_\text{grasp}$ by a fixed offset $d$ ($\sim$\,10--15\,cm) along the gripper's approach axis (straight up for a top-down grasp, \cref{alg:block_stacking} lines 3--6).
+The motion from the current pose to $T_\text{pre}$ is planned freely in joint space---the cube is still in the collision scene, so the planner avoids it naturally.
+The final descent from $T_\text{pre}$ to $T_\text{grasp}$ is executed as a \emph{straight-line Cartesian motion} with the cube temporarily removed from the collision set (because the gripper is intentionally entering the cube's bounding volume to close around it).
+This guarantees a clean top-down approach with no lateral sweeping near the cube surface.
+After grasping, the inverse retreat motion lifts the cube straight up before free-space replanning, preventing collisions with neighbouring objects.
 
-\begin{figure}[ht!]
-    \centering
-    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
-    \caption{Sample figure caption.}
-    \label{fig:sample}
-\end{figure}
 
-\subsection{Tables}
+\section{Open question: block stacking with a depth camera}
+\label{sec:depth}
 
-All tables must be centered, neat, clean and legible. The table number and title always appear before the table. See \cref{tab:sample}.
+When the simplicity assumptions (known cube poses, clean workspace) cannot be guaranteed, a depth camera mounted on the robot's wrist or on a fixed overhead rig provides the raw 3D data needed to close the perception--action loop.
+The following essential modules and procedures are required.
 
-The table title must be lower case (except for first word and proper nouns); tables are numbered consecutively.
+\paragraph{Essential modules.}
 
-\begin{table}
-    \caption{\textbf{Sample table title.} This is where you write the table caption}
-    \label{tab:sample}
-    \centering
-    \begin{tabular}{lll}
-        \toprule
-        \multicolumn{2}{c}{Part}                   \\
-        \cmidrule(r){1-2}
-        Name     & Description     & Size ($\mu$m) \\
-        \midrule
-        Dendrite & Input terminal  & $\sim$100     \\
-        Axon     & Output terminal & $\sim$10      \\
-        Soma     & Cell body       & up to $10^6$  \\
-        \bottomrule
-    \end{tabular}
-\end{table}
+\begin{enumerate}[leftmargin=*,noitemsep,topsep=0pt]
+  \item \textbf{Depth-image acquisition and preprocessing.}
+        The depth camera streams aligned RGB-D frames.
+        A preprocessing pipeline filters noise (bilateral or guided filtering), removes background via a depth threshold, and converts the depth map to a registered 3D point cloud in the robot base frame using the known camera intrinsics and the camera-to-base extrinsic calibration (obtained once offline via a checkerboard).
 
-\subsection{Cross references}
+  \item \textbf{3D scene segmentation.}
+        The point cloud is segmented into individual object clusters using, \eg, plane fitting (RANSAC) to remove the table, followed by Euclidean cluster extraction or instance-segmentation-based methods.
+        Each cluster is associated with a cube hypothesis.
 
-Please use the command \verb+\cref{}+ to cross reference the figures, tables, sections, \etc.
+  \item \textbf{6-DoF object pose estimation.}
+        For each cube cluster, a pose estimation module fits a known CAD model (a cube of known side length $s$) to the cluster, yielding a 6-DoF pose $T_\text{cube}$.
+        Classical approaches use iterative closest point (ICP); learning-based approaches (\eg, FoundPose, FFB6D) are more robust to partial occlusion.
 
-This is an example. The \cref{fig:sample} is within \cref{sec:others}.
+  \item \textbf{Collision map construction.}
+        The full point cloud (excluding the detected cubes) is voxelised into an occupancy grid or OctoMap and fed to the motion planner as the collision scene, enabling obstacle-aware path planning without manual scene description.
+
+  \item \textbf{Grasp planner.}
+        Given the estimated cube pose, a grasp planner (\eg, GraspNet or an analytical antipodal sampler) generates candidate grasp poses ranked by stability and reachability.
+        The top-ranked reachable grasp is passed to the motion planner.
+
+  \item \textbf{Collision-free motion planner.}
+        As described in \cref{sec:pseudocode}, a sampling-based planner (\eg, RRT-Connect via MoveIt) generates joint-space trajectories that avoid the live collision map.
+
+  \item \textbf{Execution monitor and recovery.}
+        Force/torque and depth feedback are monitored during execution.
+        If the grasp fails (detected by gripper width after closing), the system re-observes the scene and replans.
+        If a cube is displaced mid-execution, the perception module detects the change and the task planner re-sequences the remaining picks.
+\end{enumerate}
+
+\paragraph{Procedure.}
+\begin{enumerate}[leftmargin=*,noitemsep,topsep=0pt]
+  \item Observe the workspace: capture one or more RGB-D frames; optionally move the camera to reduce occlusions.
+  \item Preprocess and segment the point cloud; estimate 6-DoF poses of all cubes.
+  \item Build the collision map from the full scene point cloud.
+  \item Select the next cube to grasp (typically the topmost unobstructed cube); compute a grasp pose and a pre-grasp waypoint.
+  \item Plan and execute the pick-and-place sequence from \cref{alg:block_stacking}, using the live collision map.
+  \item After placing, re-observe the stack to verify placement accuracy; if the placed cube has slipped, correct before the next pick.
+  \item Repeat until all cubes are stacked.
+\end{enumerate}
+
+\noindent The depth camera thus replaces the assumption of known poses with an online perception pipeline, while the motion planning and execution layers remain largely unchanged.
 
 \bibliographystyle{plainnat}
 \bibliography{reference}
@@ -159,6 +189,6 @@ This is an example. The \cref{fig:sample} is within \cref{sec:others}.
 
 \section{Appendix}
 
-Optionally include extra information (complete proofs, additional experiments and plots) in the appendix. This section will often be part of the supplemental material.
+No additional material.
 
 \end{document}

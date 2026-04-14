@@ -257,7 +257,7 @@ straight-line descent), and it requires no changes to the underlying planner.
 \section{Open question: block stacking with a depth camera}
 \label{sec:openquestion}
 
-When simplicity assumptions (known object poses, simple convex shapes, static scene) cannot
+When simplifying assumptions (known object poses, simple convex shapes, static scene) cannot
 be fulfilled, the robot must rely on its onboard sensors to perceive the environment,
 estimate object poses, plan grasps, and execute motions robustly.
 A depth camera (\eg, an \ac{rgb}-D sensor such as an Intel RealSense or Microsoft Kinect)
@@ -270,7 +270,7 @@ Below we describe the essential modules and procedures required in this setting.
 The depth camera produces a raw point cloud $\mathcal{P} \subset \mathbb{R}^3$ at each frame.
 Standard pre-processing steps include voxel-grid downsampling (to reduce density while
 preserving geometry), statistical outlier removal (to suppress depth noise), and background
-subtraction via a ground-plane \ac{icp} fit \citep{thrun2005probabilistic}.
+subtraction via RANSAC-based ground-plane fitting \citep{thrun2005probabilistic}.
 
 \paragraph{Object detection and segmentation.}
 A learned segmentation model (\eg, Mask R-CNN applied to the \ac{rgb} channel, or
@@ -306,7 +306,8 @@ This grid serves as the obstacle representation $\mathcal{O}$ for the motion pla
 A sampling-based planner such as \ac{rrt}$^*$ \citep{karaman2011sampling} can then query
 this grid for collision checks during tree expansion.
 For time-critical re-planning (when the scene changes), a real-time variant such as
-Dynamic RRT or CHOMP can be used.
+Dynamic RRT or a gradient-based trajectory optimiser (\eg, CHOMP, which optimises
+trajectories by minimising obstacle-cost and smoothness potentials) can be used.
 
 \subsection{Closed-loop execution and error recovery}
 

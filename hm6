@@ -1,0 +1,35 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage{amsmath,amssymb,geometry}
+\geometry{margin=2.5cm}
+
+\begin{document}
+
+\begin{enumerate}
+
+\item （5分）证明 $[\hat{\sigma}_y, \hat{\sigma}_z] = 2i\hat{\sigma}_x$．
+
+\item （20分）给定一个自旋态
+\[
+|\psi\rangle = \sqrt{\frac{1}{6}}\,|u\rangle - i\sqrt{\frac{5}{6}}\,|d\rangle
+\]
+和一个方向
+\[
+\vec{n} = \left\{\frac{1}{2},\,0,\,\frac{\sqrt{3}}{2}\right\}
+\]
+\begin{enumerate}
+\item[(1)] （5分）测得自旋沿$z$方向向上和向下的几率分别是多少？
+\item[(2)] （5分）测得自旋沿$x$正方向和负方向的几率分别是多少？
+\item[(3)] （5分）测得自旋沿$\vec{n}$正方向和负方向的几率分别是多少？
+\item[(4)] （5分）计算期待值 $\langle\psi_3|\vec{n}\cdot\hat{\sigma}|\psi_3\rangle$．
+\end{enumerate}
+
+\item （15分）一个长度为 $a=1$ 的一维盒子里，粒子处于两个能量本征态（参见课本公式(6.27)）的叠加态
+\begin{align}
+\psi_{+}(x) &= \frac{\sqrt{2}}{2}\psi_2(x) + \frac{\sqrt{2}}{2}\psi_3(x), \label{eq:psi+}\\
+\psi_{-}(x) &= \frac{\sqrt{2}}{2}\psi_2(x) - \frac{\sqrt{2}}{2}\psi_3(x), \label{eq:psi-}
+\end{align}
+请画出这两个波函数 $\psi_{+}$ 和 $\psi_{-}$．
+
+\end{enumerate}
+
+\end{document}

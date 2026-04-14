@@ -1,34 +1,167 @@
 \documentclass[12pt,a4paper]{article}
 \usepackage{amsmath,amssymb,geometry}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
 \geometry{margin=2.5cm}
 
 \begin{document}
 
 \begin{enumerate}
 
-\item （5分）证明 $[\hat{\sigma}_y, \hat{\sigma}_z] = 2i\hat{\sigma}_x$．
+\item (5 pts) Prove $[\hat{\sigma}_y, \hat{\sigma}_z] = 2i\hat{\sigma}_x$.
 
-\item （20分）给定一个自旋态
+\textbf{Solution:} The Pauli matrices are defined as
+\[
+\hat{\sigma}_x = \begin{pmatrix}0&1\\1&0\end{pmatrix},\quad
+\hat{\sigma}_y = \begin{pmatrix}0&-i\\i&0\end{pmatrix},\quad
+\hat{\sigma}_z = \begin{pmatrix}1&0\\0&-1\end{pmatrix}.
+\]
+Computing the products:
+\[
+\hat{\sigma}_y\hat{\sigma}_z
+= \begin{pmatrix}0&-i\\i&0\end{pmatrix}\begin{pmatrix}1&0\\0&-1\end{pmatrix}
+= \begin{pmatrix}0&i\\i&0\end{pmatrix},
+\]
+\[
+\hat{\sigma}_z\hat{\sigma}_y
+= \begin{pmatrix}1&0\\0&-1\end{pmatrix}\begin{pmatrix}0&-i\\i&0\end{pmatrix}
+= \begin{pmatrix}0&-i\\-i&0\end{pmatrix}.
+\]
+Therefore
+\[
+[\hat{\sigma}_y,\hat{\sigma}_z]
+= \hat{\sigma}_y\hat{\sigma}_z - \hat{\sigma}_z\hat{\sigma}_y
+= \begin{pmatrix}0&i\\i&0\end{pmatrix} - \begin{pmatrix}0&-i\\-i&0\end{pmatrix}
+= \begin{pmatrix}0&2i\\2i&0\end{pmatrix}
+= 2i\begin{pmatrix}0&1\\1&0\end{pmatrix}
+= 2i\hat{\sigma}_x. \qquad\blacksquare
+\]
+
+\item (20 pts) Given a spin state
 \[
 |\psi\rangle = \sqrt{\frac{1}{6}}\,|u\rangle - i\sqrt{\frac{5}{6}}\,|d\rangle
 \]
-和一个方向
+and a direction
 \[
 \vec{n} = \left\{\frac{1}{2},\,0,\,\frac{\sqrt{3}}{2}\right\}
 \]
 \begin{enumerate}
-\item[(1)] （5分）测得自旋沿$z$方向向上和向下的几率分别是多少？
-\item[(2)] （5分）测得自旋沿$x$正方向和负方向的几率分别是多少？
-\item[(3)] （5分）测得自旋沿$\vec{n}$正方向和负方向的几率分别是多少？
-\item[(4)] （5分）计算期待值 $\langle\psi_3|\vec{n}\cdot\hat{\sigma}|\psi_3\rangle$．
+\item[(1)] (5 pts) What are the probabilities of measuring spin up and spin down along the $z$ direction?
+
+\textbf{Solution:} $|u\rangle$ and $|d\rangle$ are eigenstates of $\hat{\sigma}_z$, so
+\[
+P(\uparrow_z) = \left|\sqrt{\tfrac{1}{6}}\right|^2 = \frac{1}{6},\qquad
+P(\downarrow_z) = \left|-i\sqrt{\tfrac{5}{6}}\right|^2 = \frac{5}{6}.
+\]
+
+\item[(2)] (5 pts) What are the probabilities of measuring spin along the positive and negative $x$ directions?
+
+\textbf{Solution:} The normalized eigenstates of $\hat{\sigma}_x$ are
+\[
+|+x\rangle = \frac{1}{\sqrt{2}}\bigl(|u\rangle+|d\rangle\bigr),\qquad
+|-x\rangle = \frac{1}{\sqrt{2}}\bigl(|u\rangle-|d\rangle\bigr).
+\]
+Computing the projections:
+\[
+\langle+x|\psi\rangle = \frac{1}{\sqrt{2}}\!\left(\sqrt{\tfrac{1}{6}} - i\sqrt{\tfrac{5}{6}}\right),\qquad
+|\langle+x|\psi\rangle|^2 = \frac{1}{2}\!\left(\frac{1}{6}+\frac{5}{6}\right) = \frac{1}{2},
+\]
+\[
+\langle-x|\psi\rangle = \frac{1}{\sqrt{2}}\!\left(\sqrt{\tfrac{1}{6}} + i\sqrt{\tfrac{5}{6}}\right),\qquad
+|\langle-x|\psi\rangle|^2 = \frac{1}{2}\!\left(\frac{1}{6}+\frac{5}{6}\right) = \frac{1}{2}.
+\]
+Hence $P(+x)=P(-x)=\dfrac{1}{2}$.
+
+\item[(3)] (5 pts) What are the probabilities of measuring spin along the positive and negative $\vec{n}$ directions?
+
+\textbf{Solution:} The polar angle $\theta$ satisfies $\cos\theta=\dfrac{\sqrt{3}}{2}$, $\sin\theta=\dfrac{1}{2}$, i.e.\ $\theta=\dfrac{\pi}{6}$; the azimuthal angle $\varphi=0$ (since $n_y=0$). The eigenstates of $\vec{n}\cdot\hat{\sigma}$ are
+\[
+|{+n}\rangle = \cos\frac{\theta}{2}|u\rangle + \sin\frac{\theta}{2}|d\rangle,\qquad
+|{-n}\rangle = \sin\frac{\theta}{2}|u\rangle - \cos\frac{\theta}{2}|d\rangle.
+\]
+Using $\sin^2\!\dfrac{\pi}{12}=\dfrac{2-\sqrt{3}}{4}$ and $\cos^2\!\dfrac{\pi}{12}=\dfrac{2+\sqrt{3}}{4}$, we obtain
+\[
+P(+n) = \cos^2\!\frac{\pi}{12}\cdot\frac{1}{6} + \sin^2\!\frac{\pi}{12}\cdot\frac{5}{6}
+= \frac{1}{6}\!\left(1+4\sin^2\!\frac{\pi}{12}\right)
+= \frac{1}{6}\!\left(1+2-\sqrt{3}\right) = \frac{3-\sqrt{3}}{6},
+\]
+\[
+P(-n) = 1 - P(+n) = \frac{3+\sqrt{3}}{6}.
+\]
+
+\item[(4)] (5 pts) Compute the expectation value $\langle\psi|\vec{n}\cdot\hat{\sigma}|\psi\rangle$.
+
+\textbf{Solution:} Since $\vec{n}\cdot\hat{\sigma}=\dfrac{1}{2}\hat{\sigma}_x+\dfrac{\sqrt{3}}{2}\hat{\sigma}_z$, we compute each term:
+\[
+\langle\hat{\sigma}_z\rangle = P(\uparrow_z)-P(\downarrow_z) = \frac{1}{6}-\frac{5}{6} = -\frac{2}{3},
+\]
+\[
+\langle\hat{\sigma}_x\rangle = \langle\psi|\hat{\sigma}_x|\psi\rangle:
+\quad \hat{\sigma}_x|\psi\rangle = \sqrt{\tfrac{1}{6}}|d\rangle - i\sqrt{\tfrac{5}{6}}|u\rangle,
+\]
+\[
+\langle\psi|\hat{\sigma}_x|\psi\rangle
+= \sqrt{\tfrac{1}{6}}\!\left(-i\sqrt{\tfrac{5}{6}}\right) + i\sqrt{\tfrac{5}{6}}\!\cdot\sqrt{\tfrac{1}{6}}
+= -i\frac{\sqrt{5}}{6} + i\frac{\sqrt{5}}{6} = 0.
+\]
+Therefore
+\[
+\langle\psi|\vec{n}\cdot\hat{\sigma}|\psi\rangle
+= \frac{1}{2}\cdot 0 + \frac{\sqrt{3}}{2}\cdot\left(-\frac{2}{3}\right)
+= -\frac{\sqrt{3}}{3}.
+\]
+(This is consistent with $P(+n)-P(-n)=\dfrac{3-\sqrt{3}}{6}-\dfrac{3+\sqrt{3}}{6}=-\dfrac{\sqrt{3}}{3}$.)
 \end{enumerate}
 
-\item （15分）一个长度为 $a=1$ 的一维盒子里，粒子处于两个能量本征态（参见课本公式(6.27)）的叠加态
+\item (15 pts) A particle in a one-dimensional box of length $a=1$ is in a superposition of two energy eigenstates (see textbook Eq.~(6.27)):
 \begin{align}
 \psi_{+}(x) &= \frac{\sqrt{2}}{2}\psi_2(x) + \frac{\sqrt{2}}{2}\psi_3(x), \label{eq:psi+}\\
 \psi_{-}(x) &= \frac{\sqrt{2}}{2}\psi_2(x) - \frac{\sqrt{2}}{2}\psi_3(x), \label{eq:psi-}
 \end{align}
-请画出这两个波函数 $\psi_{+}$ 和 $\psi_{-}$．
+Plot these two wave functions $\psi_{+}$ and $\psi_{-}$.
+
+\textbf{Solution:} For an infinite square well of length $a=1$, the energy eigenfunctions are
+\[
+\psi_n(x)=\sqrt{2}\sin(n\pi x),\quad 0\leq x\leq 1.
+\]
+Substituting, we obtain
+\[
+\psi_{\pm}(x)=\sin(2\pi x)\pm\sin(3\pi x),\quad 0\leq x\leq 1.
+\]
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+  width=12cm, height=6cm,
+  xlabel={$x$}, ylabel={$\psi$},
+  title={$\psi_{+}(x)=\sin(2\pi x)+\sin(3\pi x)$},
+  xmin=0, xmax=1,
+  ymin=-2.1, ymax=2.1,
+  xtick={0,0.2,0.4,0.6,0.8,1.0},
+  grid=major,
+  thick
+]
+\addplot[blue, domain=0:1, samples=300] {sin(deg(2*pi*x))+sin(deg(3*pi*x))};
+\end{axis}
+\end{tikzpicture}
+
+\vspace{1em}
+
+\begin{tikzpicture}
+\begin{axis}[
+  width=12cm, height=6cm,
+  xlabel={$x$}, ylabel={$\psi$},
+  title={$\psi_{-}(x)=\sin(2\pi x)-\sin(3\pi x)$},
+  xmin=0, xmax=1,
+  ymin=-2.1, ymax=2.1,
+  xtick={0,0.2,0.4,0.6,0.8,1.0},
+  grid=major,
+  thick
+]
+\addplot[red, domain=0:1, samples=300] {sin(deg(2*pi*x))-sin(deg(3*pi*x))};
+\end{axis}
+\end{tikzpicture}
+\end{center}
 
 \end{enumerate}
 

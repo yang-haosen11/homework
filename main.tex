@@ -1,0 +1,164 @@
+% modified from NeurIPS 2022 Latex template
+% authors: Yixin Zhu (yixin.zhu@pku.edu.cn), Liangru Xiang
+% v1.0: 2022.07.21
+
+\documentclass{article}
+\PassOptionsToPackage{numbers,compress}{natbib}
+\usepackage[final]{template22}
+\input{config.tex}
+
+\title{\LaTeX{} Template for Course Project}
+
+\author{%
+  Your Name\thanks{Use footnote for providing further information
+    about author (webpage, co-first authors, \etc).} \\
+  Department of xxx\\
+  Your University\\
+  \texttt{yourName@xxx.edu.cn} \\
+  % examples of more authors
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \AND
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+  % \And
+  % Coauthor \\
+  % Affiliation \\
+  % Address \\
+  % \texttt{email} \\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+The abstract must be limited to one paragraph; see an annotated \href{https://cbs.umn.edu/sites/cbs.umn.edu/files/public/downloads/Annotated_Nature_abstract.pdf}{Nature abstract} as the guideline. In particular, you will need one or two sentences providing a basic introduction to the field, comprehensible to a scientist in any discipline. Next, provide two to three sentences of more detailed background, comprehensible to scientists in related disciplines. The next two sentences are probably the most essential one in the abstract: One sentence clearly stating the general problem being addressed by this particular study, and one sentence summarising the main result (with the words ``here we show'' or their equivalent). The rest are detailed analysis of results: (i) Two or three sentences explaining what the main result reveals in direct comparison to what was thought to be the case previously, or how the main result adds to previous knowledge. (ii) One or two sentences to put the results into a more general context. (iii) Two or three sentences to provide a broader perspective, readily comprehensible to a scientist in any discipline, may be included in the first paragraph if the editor considers that the accessibility of the paper is significantly enhanced by their inclusion. Under these circumstances, the length of the paragraph can be up to 300 words.
+\end{abstract}
+
+
+\section{Introduction}
+\label{sec:introduction}
+
+
+This provides the \LaTeX{} template for project report. Please read the instructions carefully and follow them faithfully.
+
+\section{Headings: first level}\label{sec:headings}
+
+All headings should be lower case (except for first word and proper nouns).
+
+\subsection{Headings: second level}
+
+This is a second-level heading.
+
+\subsubsection{Headings: third level}
+
+This is a third-level heading.
+
+\paragraph{Paragraphs}
+
+There is also a \verb+\paragraph+ command available.
+
+\section{Citations, figures, tables, references}\label{sec:others}
+
+These instructions apply to everyone.
+
+\subsection{Citations within the text}
+
+This is an citation example \citep{zhu2020dark}. You can also cite in the author-year format by using \citet{zhu2020dark}. Please list all your references into \verb+reference.bib+, and add the citation with command \verb+\citep{}+ or \verb+\citet{}+. Of note, bibtex directly exported by Google Scholar oftentimes has errors:
+\begin{itemize}[leftmargin=*,noitemsep,nolistsep,topsep=0pt]
+    \item ICLR conference papers usually are displayed as arXiv papers. You should correct in the bibtex.
+    \item Some papers do have both arXiv version and published version. Click on all versions in Google Scholar, and only use the published version.
+    \item Some books were wrongly classified as article in Google Scholar. Please manually change it to book when cite.
+    \item Some book chapters were wrongly classified as article in Google Scholar. Please use incollection to properly cite.
+\end{itemize}
+The reference.bib file offers some examples.
+
+Please use \verb+\ac{}+ and its package to properly manage acronym. For instance, you can directly use \ac{pku}; this will give both full names and its acronym. The next time when you use it, \ac{pku}, it will only show the acronym. You can tell the package that you want the full name, \acf{pku}, its short form, \acs{pku}, or its long form, \acl{pku}. It also provides a way to give you the plural form, \eg, \acp{pku}, \aclp{pku}; note that some may not be grammatically correct, and you should use it properly.
+
+\subsection{Footnotes}
+
+Footnotes should be used sparingly.  If you do require a footnote, indicate footnotes with a number\footnote{Sample of the first footnote.} in the text.
+
+Note that footnotes are properly typeset \emph{after} punctuation
+marks.\footnote{As in this example.}
+
+\begin{figure}[t!]
+     \centering
+     \begin{subfigure}[b]{0.48\linewidth}
+        \centering
+        \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+        \caption{\textbf{Subfigure 1}. This is what you should write to explain this subfigure.}
+        \label{fig:sub1}
+     \end{subfigure}%
+     \hfill%
+     \begin{subfigure}[b]{0.48\linewidth}
+        \centering
+        \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+        \caption{\textbf{Subfigure 2}. This is what you should write to explain this subfigure.}
+        \label{fig:sub2}
+     \end{subfigure}
+     \caption{\textbf{Figure caption.} The figure caption goes here.}
+\end{figure}
+
+\subsection{Figures}
+
+All artwork must be neat, clean, and legible. Lines should be dark enough for purposes of reproduction. The figure number and caption always appear after the figure. The figure caption should be lower case (except for first word and proper nouns); figures are numbered consecutively. 
+
+Please place your figure files into the \verb+figures/+ folder. An example figure is shown in \cref{fig:sample}. You can also use subfigures, \eg, \cref{fig:sub1,fig:sub2}.
+
+\begin{figure}[ht!]
+    \centering
+    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{4cm}{0cm}}
+    \caption{Sample figure caption.}
+    \label{fig:sample}
+\end{figure}
+
+\subsection{Tables}
+
+All tables must be centered, neat, clean and legible. The table number and title always appear before the table. See \cref{tab:sample}.
+
+The table title must be lower case (except for first word and proper nouns); tables are numbered consecutively.
+
+\begin{table}
+    \caption{\textbf{Sample table title.} This is where you write the table caption}
+    \label{tab:sample}
+    \centering
+    \begin{tabular}{lll}
+        \toprule
+        \multicolumn{2}{c}{Part}                   \\
+        \cmidrule(r){1-2}
+        Name     & Description     & Size ($\mu$m) \\
+        \midrule
+        Dendrite & Input terminal  & $\sim$100     \\
+        Axon     & Output terminal & $\sim$10      \\
+        Soma     & Cell body       & up to $10^6$  \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Cross references}
+
+Please use the command \verb+\cref{}+ to cross reference the figures, tables, sections, \etc.
+
+This is an example. The \cref{fig:sample} is within \cref{sec:others}.
+
+\bibliographystyle{plainnat}
+\bibliography{reference}
+
+\appendix
+
+\section{Appendix}
+
+Optionally include extra information (complete proofs, additional experiments and plots) in the appendix. This section will often be part of the supplemental material.
+
+\end{document}

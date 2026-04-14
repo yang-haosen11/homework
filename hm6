@@ -1,5 +1,7 @@
 \documentclass[12pt,a4paper]{article}
 \usepackage{amsmath,amssymb,geometry}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
 \geometry{margin=2.5cm}
 
 \begin{document}
@@ -7,6 +9,33 @@
 \begin{enumerate}
 
 \item （5分）证明 $[\hat{\sigma}_y, \hat{\sigma}_z] = 2i\hat{\sigma}_x$．
+
+\textbf{解：}泡利矩阵的定义为
+\[
+\hat{\sigma}_x = \begin{pmatrix}0&1\\1&0\end{pmatrix},\quad
+\hat{\sigma}_y = \begin{pmatrix}0&-i\\i&0\end{pmatrix},\quad
+\hat{\sigma}_z = \begin{pmatrix}1&0\\0&-1\end{pmatrix}.
+\]
+计算乘积：
+\[
+\hat{\sigma}_y\hat{\sigma}_z
+= \begin{pmatrix}0&-i\\i&0\end{pmatrix}\begin{pmatrix}1&0\\0&-1\end{pmatrix}
+= \begin{pmatrix}0&i\\i&0\end{pmatrix},
+\]
+\[
+\hat{\sigma}_z\hat{\sigma}_y
+= \begin{pmatrix}1&0\\0&-1\end{pmatrix}\begin{pmatrix}0&-i\\i&0\end{pmatrix}
+= \begin{pmatrix}0&-i\\-i&0\end{pmatrix}.
+\]
+因此
+\[
+[\hat{\sigma}_y,\hat{\sigma}_z]
+= \hat{\sigma}_y\hat{\sigma}_z - \hat{\sigma}_z\hat{\sigma}_y
+= \begin{pmatrix}0&i\\i&0\end{pmatrix} - \begin{pmatrix}0&-i\\-i&0\end{pmatrix}
+= \begin{pmatrix}0&2i\\2i&0\end{pmatrix}
+= 2i\begin{pmatrix}0&1\\1&0\end{pmatrix}
+= 2i\hat{\sigma}_x. \qquad\blacksquare
+\]
 
 \item （20分）给定一个自旋态
 \[
@@ -18,9 +47,70 @@
 \]
 \begin{enumerate}
 \item[(1)] （5分）测得自旋沿$z$方向向上和向下的几率分别是多少？
+
+\textbf{解：}$|u\rangle$ 和 $|d\rangle$ 即为 $\hat{\sigma}_z$ 的本征态，故
+\[
+P(\uparrow_z) = \left|\sqrt{\tfrac{1}{6}}\right|^2 = \frac{1}{6},\qquad
+P(\downarrow_z) = \left|-i\sqrt{\tfrac{5}{6}}\right|^2 = \frac{5}{6}.
+\]
+
 \item[(2)] （5分）测得自旋沿$x$正方向和负方向的几率分别是多少？
+
+\textbf{解：}$\hat{\sigma}_x$ 的归一化本征态为
+\[
+|+x\rangle = \frac{1}{\sqrt{2}}\bigl(|u\rangle+|d\rangle\bigr),\qquad
+|-x\rangle = \frac{1}{\sqrt{2}}\bigl(|u\rangle-|d\rangle\bigr).
+\]
+计算投影：
+\[
+\langle+x|\psi\rangle = \frac{1}{\sqrt{2}}\!\left(\sqrt{\tfrac{1}{6}} - i\sqrt{\tfrac{5}{6}}\right),\qquad
+|\langle+x|\psi\rangle|^2 = \frac{1}{2}\!\left(\frac{1}{6}+\frac{5}{6}\right) = \frac{1}{2},
+\]
+\[
+\langle-x|\psi\rangle = \frac{1}{\sqrt{2}}\!\left(\sqrt{\tfrac{1}{6}} + i\sqrt{\tfrac{5}{6}}\right),\qquad
+|\langle-x|\psi\rangle|^2 = \frac{1}{2}\!\left(\frac{1}{6}+\frac{5}{6}\right) = \frac{1}{2}.
+\]
+故 $P(+x)=P(-x)=\dfrac{1}{2}$．
+
 \item[(3)] （5分）测得自旋沿$\vec{n}$正方向和负方向的几率分别是多少？
-\item[(4)] （5分）计算期待值 $\langle\psi_3|\vec{n}\cdot\hat{\sigma}|\psi_3\rangle$．
+
+\textbf{解：}$\vec{n}$ 的极角为 $\theta$ 满足 $\cos\theta=\dfrac{\sqrt{3}}{2}$，$\sin\theta=\dfrac{1}{2}$，即 $\theta=\dfrac{\pi}{6}$；方位角 $\varphi=0$（$n_y=0$）。$\vec{n}\cdot\hat{\sigma}$ 的本征态为
+\[
+|{+n}\rangle = \cos\frac{\theta}{2}|u\rangle + \sin\frac{\theta}{2}|d\rangle,\qquad
+|{-n}\rangle = \sin\frac{\theta}{2}|u\rangle - \cos\frac{\theta}{2}|d\rangle.
+\]
+利用 $\sin^2\!\dfrac{\pi}{12}=\dfrac{2-\sqrt{3}}{4}$，$\cos^2\!\dfrac{\pi}{12}=\dfrac{2+\sqrt{3}}{4}$，得
+\[
+P(+n) = \cos^2\!\frac{\pi}{12}\cdot\frac{1}{6} + \sin^2\!\frac{\pi}{12}\cdot\frac{5}{6}
+= \frac{1}{6}\!\left(1+4\sin^2\!\frac{\pi}{12}\right)
+= \frac{1}{6}\!\left(1+2-\sqrt{3}\right) = \frac{3-\sqrt{3}}{6},
+\]
+\[
+P(-n) = 1 - P(+n) = \frac{3+\sqrt{3}}{6}.
+\]
+
+\item[(4)] （5分）计算期待值 $\langle\psi|\vec{n}\cdot\hat{\sigma}|\psi\rangle$．
+
+\textbf{解：}由 $\vec{n}\cdot\hat{\sigma}=\dfrac{1}{2}\hat{\sigma}_x+\dfrac{\sqrt{3}}{2}\hat{\sigma}_z$，分别计算：
+\[
+\langle\hat{\sigma}_z\rangle = P(\uparrow_z)-P(\downarrow_z) = \frac{1}{6}-\frac{5}{6} = -\frac{2}{3},
+\]
+\[
+\langle\hat{\sigma}_x\rangle = \langle\psi|\hat{\sigma}_x|\psi\rangle:
+\quad \hat{\sigma}_x|\psi\rangle = \sqrt{\tfrac{1}{6}}|d\rangle - i\sqrt{\tfrac{5}{6}}|u\rangle,
+\]
+\[
+\langle\psi|\hat{\sigma}_x|\psi\rangle
+= \sqrt{\tfrac{1}{6}}\!\left(-i\sqrt{\tfrac{5}{6}}\right) + i\sqrt{\tfrac{5}{6}}\!\cdot\sqrt{\tfrac{1}{6}}
+= -i\frac{\sqrt{5}}{6} + i\frac{\sqrt{5}}{6} = 0.
+\]
+故
+\[
+\langle\psi|\vec{n}\cdot\hat{\sigma}|\psi\rangle
+= \frac{1}{2}\cdot 0 + \frac{\sqrt{3}}{2}\cdot\left(-\frac{2}{3}\right)
+= -\frac{\sqrt{3}}{3}.
+\]
+（此结果与 $P(+n)-P(-n)=\dfrac{3-\sqrt{3}}{6}-\dfrac{3+\sqrt{3}}{6}=-\dfrac{\sqrt{3}}{3}$ 吻合。）
 \end{enumerate}
 
 \item （15分）一个长度为 $a=1$ 的一维盒子里，粒子处于两个能量本征态（参见课本公式(6.27)）的叠加态
@@ -29,6 +119,49 @@
 \psi_{-}(x) &= \frac{\sqrt{2}}{2}\psi_2(x) - \frac{\sqrt{2}}{2}\psi_3(x), \label{eq:psi-}
 \end{align}
 请画出这两个波函数 $\psi_{+}$ 和 $\psi_{-}$．
+
+\textbf{解：}对于 $a=1$ 的一维无限深方势阱，能量本征函数为
+\[
+\psi_n(x)=\sqrt{2}\sin(n\pi x),\quad 0\leq x\leq 1.
+\]
+代入得
+\[
+\psi_{\pm}(x)=\sin(2\pi x)\pm\sin(3\pi x),\quad 0\leq x\leq 1.
+\]
+
+\begin{center}
+\begin{tikzpicture}
+\begin{axis}[
+  width=12cm, height=6cm,
+  xlabel={$x$}, ylabel={$\psi$},
+  title={$\psi_{+}(x)=\sin(2\pi x)+\sin(3\pi x)$},
+  xmin=0, xmax=1,
+  ymin=-2.1, ymax=2.1,
+  xtick={0,0.2,0.4,0.6,0.8,1.0},
+  grid=major,
+  thick
+]
+\addplot[blue, domain=0:1, samples=300] {sin(deg(2*pi*x))+sin(deg(3*pi*x))};
+\end{axis}
+\end{tikzpicture}
+
+\vspace{1em}
+
+\begin{tikzpicture}
+\begin{axis}[
+  width=12cm, height=6cm,
+  xlabel={$x$}, ylabel={$\psi$},
+  title={$\psi_{-}(x)=\sin(2\pi x)-\sin(3\pi x)$},
+  xmin=0, xmax=1,
+  ymin=-2.1, ymax=2.1,
+  xtick={0,0.2,0.4,0.6,0.8,1.0},
+  grid=major,
+  thick
+]
+\addplot[red, domain=0:1, samples=300] {sin(deg(2*pi*x))-sin(deg(3*pi*x))};
+\end{axis}
+\end{tikzpicture}
+\end{center}
 
 \end{enumerate}
 

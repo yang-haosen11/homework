@@ -1,0 +1,79 @@
+% Modified from NeurIPS 2022 LaTeX style file
+% Adapted for course project reports
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{template22}[2022/07/21 Course Project Template]
+
+% Options
+\newif\if@finalsubmission
+\@finalsubmissionfalse
+\DeclareOption{final}{\@finalsubmissiontrue}
+\ProcessOptions\relax
+
+% Page geometry
+\usepackage[verbose=true,letterpaper]{geometry}
+\AtBeginDocument{
+  \geometry{
+    textheight=9in,
+    textwidth=6.5in,
+    top=1in,
+    headheight=14pt,
+    headsep=25pt,
+    footskip=30pt
+  }
+}
+
+% Core packages
+\usepackage{times}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{subcaption}
+\usepackage{microtype}
+
+% Hyperref and cleveref
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  citecolor=green!50!black,
+  urlcolor=blue!70!black,
+}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+% Acronym support
+\usepackage[nolist]{acronym}
+
+% Algorithm support
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\algnewcommand\algorithmicinput{\textbf{Input:}}
+\algnewcommand\algorithmicoutput{\textbf{Output:}}
+\algnewcommand\Input{\item[\algorithmicinput]}
+\algnewcommand\Output{\item[\algorithmicoutput]}
+
+% natbib
+\usepackage{natbib}
+
+% Title formatting
+\usepackage{titlesec}
+
+% Float placement
+\usepackage{float}
+
+% Convenient abbreviations
+\newcommand{\etc}{\emph{etc.}}
+\newcommand{\eg}{\emph{e.g.,}}
+\newcommand{\ie}{\emph{i.e.,}}
+\newcommand{\cf}{\emph{cf.}}
+
+% Paragraph spacing
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{1em}
+
+\endinput

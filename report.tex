@@ -1,0 +1,375 @@
+% Modified from NeurIPS 2022 LaTeX template
+% v1.0: 2022.07.21
+
+\documentclass{article}
+\PassOptionsToPackage{numbers,compress}{natbib}
+\usepackage[final]{template22}
+\input{config.tex}
+
+\title{Block Stacking with Robot Motion Planners}
+
+\author{%
+  Yang Haosen \\
+  Department of Computer Science \\
+  Peking University \\
+  \texttt{yanghaosen@stu.pku.edu.cn} \\
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Robotic manipulation stands as a cornerstone challenge in embodied artificial intelligence,
+requiring tightly integrated perception, planning, and control modules that must work in concert
+to accomplish physical tasks.
+Block stacking—the task of sequentially picking up cubes and placing them in a designated
+configuration—provides a tractable yet representative benchmark for evaluating end-to-end
+manipulation pipelines.
+Despite apparent simplicity, the task exposes fundamental difficulties: singularity avoidance
+during inverse kinematics, collision-free trajectory generation in cluttered environments, and
+robust 6-DoF pose estimation under real-world sensor noise.
+Here we show that a structured motion-planning pipeline with a dedicated pre-grasp approach
+phase reliably solves the block stacking task, and that extending this pipeline with a depth
+camera and learned perception modules can handle unconstrained, real-world scenarios.
+Compared with open-loop scripted trajectories, the proposed planner-centric approach
+accommodates arbitrary initial cube positions and gracefully handles kinematic constraints.
+These findings highlight the critical role of modular system design—separating perception,
+grasp planning, and motion planning—in scaling manipulation systems to more complex tasks.
+The broader perspective suggests that combining data-driven perception with classical
+motion planning provides a principled path toward general-purpose robotic manipulation.
+\end{abstract}
+
+
+% -----------------------------------------------------------------------
+\section{Introduction}
+\label{sec:introduction}
+
+Robotic block stacking is a canonical manipulation task that requires a robot arm to grasp
+cubes from arbitrary initial positions and place them in a specified stacked configuration.
+Although the problem is often studied under simplifying assumptions (\eg, known object poses,
+flat tabletop, fixed lighting), it encapsulates the essential challenges of real-world
+manipulation: collision-free motion planning, end-effector trajectory generation, grasp
+synthesis, and feedback control.
+
+Classical approaches decompose the task into a sequence of motion-planning sub-problems:
+plan a collision-free path to a pre-grasp pose, execute a straight-line approach to the
+grasp pose, close the gripper, and repeat for the placement phase.
+Sampling-based planners such as \ac{rrt} \citep{lavalle1998rapidly} and \ac{prm}
+\citep{kavraki1996probabilistic} have become the de facto standard for high-\ac{dof}
+robot arms because they efficiently explore the configuration space without requiring an
+explicit obstacle map.
+
+This report is organised as follows.
+\cref{sec:pseudocode} presents a structured pseudo-code description of the block stacking
+pipeline, defining the \texttt{motion\_plan} API and explaining how each argument is
+computed.
+\cref{sec:collision} discusses a simple yet effective strategy to avoid end-effector
+collision with the target cube during the grasping phase.
+\cref{sec:openquestion} addresses the open question of how to handle unconstrained
+environments using a depth camera, enumerating the essential perception, grasp-planning,
+and motion-planning modules.
+
+% -----------------------------------------------------------------------
+\section{Pseudo-code for block stacking}
+\label{sec:pseudocode}
+
+\subsection{Overview of the API}
+
+The core primitive used throughout the pipeline is:
+
+\begin{center}
+\texttt{motion\_plan(q\_start, T\_goal, obstacle\_set, mode)}
+\end{center}
+
+\noindent The arguments are defined as follows.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{\texttt{q\_start}} ($\in \mathbb{R}^n$): the current joint configuration of
+        the robot, where $n$ is the number of \acp{dof}.
+        It is read directly from the joint encoders at planning time.
+
+  \item \textbf{\texttt{T\_goal}} ($\in SE(3)$): the desired end-effector pose expressed as
+        a $4{\times}4$ homogeneous transformation matrix in the robot's base frame.
+        For a grasp, $T_{\text{goal}}$ is derived from the detected cube pose
+        $T_{\text{cube}}^{\text{base}}$ by pre-multiplying a fixed gripper-offset transform
+        $T_{\text{grasp}}^{\text{cube}}$ that encodes the desired approach direction and
+        finger alignment:
+        $T_{\text{goal}} = T_{\text{cube}}^{\text{base}} \cdot T_{\text{grasp}}^{\text{cube}}$.
+        The \ac{ik} solver maps $T_{\text{goal}}$ to a target joint configuration
+        $q_{\text{goal}}$, which the planner uses as the goal node.
+
+  \item \textbf{\texttt{obstacle\_set}}: a collection of geometric primitives (boxes, spheres,
+        meshes) or a voxel grid representing all objects in the scene that must be avoided.
+        This is updated after every manipulation action (\eg, after a cube is grasped it is
+        attached to the robot model and removed from the static obstacle set).
+
+  \item \textbf{\texttt{mode}}: planning mode, either \texttt{"free"} (sampling-based,
+        e.g., \ac{rrt}$^*$ \citep{karaman2011sampling}) for unconstrained motions, or
+        \texttt{"cartesian"} for straight-line end-effector motions required during
+        approach and retraction.
+\end{itemize}
+
+The function returns a time-parameterised joint trajectory
+$\tau = \{(q_0, t_0), (q_1, t_1), \ldots, (q_T, t_T)\}$
+that the robot controller then tracks.
+
+\subsection{Full algorithm}
+
+\cref{alg:stacking} gives the complete pseudo-code for stacking $N$ cubes.
+The algorithm proceeds in six phases for each cube:
+(1) move to the pre-grasp pose,
+(2) approach the cube linearly,
+(3) close the gripper,
+(4) move to the pre-place pose,
+(5) descend linearly to the place pose, and
+(6) release and retract.
+The accumulated stack height $h$ ensures each subsequent cube is placed on top of the
+previous one.
+
+\begin{algorithm}[t!]
+\caption{Block stacking with a robot arm}
+\label{alg:stacking}
+\begin{algorithmic}[1]
+\Input{Cube poses $\{T_i^{\text{base}}\}_{i=1}^{N}$, target base position $p_{\text{target}}$,
+       cube height $h_c$, approach offset $d$}
+\Output{Stacked configuration of $N$ cubes}
+\State $h \gets 0$ \Comment{accumulated stack height}
+\For{$i = 1$ to $N$}
+    \State $q_{\text{cur}} \gets \text{ReadJointAngles}()$
+
+    \Statex \textit{// --- Grasp phase ---}
+    \State $T_{\text{grasp}} \gets T_i^{\text{base}} \cdot T_{\text{grasp}}^{\text{cube}}$
+           \Comment{grasp pose from cube pose and fixed gripper offset}
+    \State $T_{\text{pre-grasp}} \gets T_{\text{grasp}} \cdot
+           \begin{bmatrix} I & [0,0,d]^\top \\ 0 & 1 \end{bmatrix}$
+           \Comment{offset $d$ along approach axis}
+    \State $\tau_1 \gets \text{motion\_plan}(q_{\text{cur}},\ T_{\text{pre-grasp}},\
+           \mathcal{O},\ \text{"free"})$
+    \State $\text{Execute}(\tau_1)$;\ $q_{\text{cur}} \gets \text{ReadJointAngles}()$
+
+    \State $\tau_2 \gets \text{motion\_plan}(q_{\text{cur}},\ T_{\text{grasp}},\
+           \mathcal{O},\ \text{"cartesian"})$
+           \Comment{straight-line descent}
+    \State $\text{Execute}(\tau_2)$
+
+    \State $\text{CloseGripper}()$
+    \State $\mathcal{O} \gets \mathcal{O} \setminus \{\text{cube}_i\}$;
+           attach cube$_i$ to robot model
+           \Comment{update collision model}
+
+    \Statex \textit{// --- Place phase ---}
+    \State $q_{\text{cur}} \gets \text{ReadJointAngles}()$
+    \State $T_{\text{place}} \gets \text{ComputePlacePose}(p_{\text{target}},\ h)$
+           \Comment{$h = i \cdot h_c$ for cube $i$}
+    \State $T_{\text{pre-place}} \gets T_{\text{place}} \cdot
+           \begin{bmatrix} I & [0,0,d]^\top \\ 0 & 1 \end{bmatrix}$
+    \State $\tau_3 \gets \text{motion\_plan}(q_{\text{cur}},\ T_{\text{pre-place}},\
+           \mathcal{O},\ \text{"free"})$
+    \State $\text{Execute}(\tau_3)$;\ $q_{\text{cur}} \gets \text{ReadJointAngles}()$
+
+    \State $\tau_4 \gets \text{motion\_plan}(q_{\text{cur}},\ T_{\text{place}},\
+           \mathcal{O},\ \text{"cartesian"})$
+    \State $\text{Execute}(\tau_4)$
+
+    \State $\text{OpenGripper}()$
+    \State detach cube$_i$ from robot model;\ $\mathcal{O} \gets \mathcal{O} \cup \{\text{cube}_i\}$
+    \State $h \gets h + h_c$
+
+    \Statex \textit{// --- Retract ---}
+    \State $q_{\text{cur}} \gets \text{ReadJointAngles}()$
+    \State $\tau_5 \gets \text{motion\_plan}(q_{\text{cur}},\ T_{\text{pre-place}},\
+           \mathcal{O},\ \text{"cartesian"})$
+    \State $\text{Execute}(\tau_5)$
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Computing the arguments}
+
+\paragraph{Grasp pose $T_{\text{grasp}}^{\text{cube}}$.}
+Given that cubes have flat top faces, a canonical top-down grasp is defined by aligning the
+gripper's approach axis (typically $-z$ of the \ac{tcp} frame) with the world $+z$ axis and
+centring the fingers over the cube's centroid.
+The fixed transform $T_{\text{grasp}}^{\text{cube}}$ encodes a pure translation along $+z$
+by half the cube's side length plus the gripper's finger offset, and a rotation that aligns
+the gripper opening with the cube's longer horizontal dimension.
+
+\paragraph{Place pose $T_{\text{place}}$.}
+\texttt{ComputePlacePose}$(p_{\text{target}},h)$ constructs a pose with translation
+$(p_x, p_y, h + h_c/2)$ and identity rotation (cube placed axis-aligned), where $p_{\text{target}}=(p_x,p_y)$
+is the desired stack footprint in the world frame and $h$ is the current stack height.
+
+\paragraph{Obstacle set $\mathcal{O}$.}
+Initially $\mathcal{O}$ contains all cubes (represented as axis-aligned bounding boxes),
+the table surface, and any static fixtures.
+When a cube is grasped it transitions from a static obstacle to an attached body on the
+robot's kinematic chain; the planner then uses the combined robot-plus-cube mesh for
+self- and environment collision checking.
+
+% -----------------------------------------------------------------------
+\section{Avoiding end-effector collision during grasping}
+\label{sec:collision}
+
+When the motion planner is asked to bring the end-effector directly to the grasp pose
+$T_{\text{grasp}}$, the generated trajectory may approach the cube laterally, causing the
+gripper fingers to collide with the cube's side faces before the correct top-down alignment
+is achieved.
+
+\paragraph{Pre-grasp approach strategy.}
+The simplest and most widely used solution is the \emph{pre-grasp pose} strategy, illustrated
+schematically in \cref{fig:pregrasp}:
+
+\begin{enumerate}[leftmargin=*]
+  \item Compute a \emph{pre-grasp pose} $T_{\text{pre-grasp}}$ by offsetting $T_{\text{grasp}}$
+        by a safe distance $d$ (typically 5–15\,cm) along the gripper's approach axis (the
+        $-z$ direction of the \ac{tcp} frame).
+        In homogeneous coordinates this is a pure translation:
+        $T_{\text{pre-grasp}} = T_{\text{grasp}} \cdot \operatorname{Translate}(0, 0, d)$.
+
+  \item Use \texttt{motion\_plan}$(\cdot,\ T_{\text{pre-grasp}},\ \mathcal{O},\ \text{"free"})$
+        to find any collision-free path to the pre-grasp pose.
+        Because the gripper is still $d$ above the cube, the planner has ample clearance and
+        is unlikely to produce a trajectory that intersects the cube.
+
+  \item Execute a straight-line \emph{Cartesian} motion from $T_{\text{pre-grasp}}$ to
+        $T_{\text{grasp}}$ using
+        \texttt{motion\_plan}$(\cdot,\ T_{\text{grasp}},\ \mathcal{O},\ \text{"cartesian"})$.
+        Because this segment travels purely along the approach axis, the gripper descends
+        vertically onto the cube with no lateral displacement, entirely avoiding side-face
+        collisions.
+\end{enumerate}
+
+This two-step approach elegantly decouples the global path-planning problem (unconstrained
+free-space motion to the pre-grasp pose) from the local insertion problem (constrained
+straight-line descent), and it requires no changes to the underlying planner.
+
+\begin{figure}[t!]
+    \centering
+    \fbox{\rule[-.5cm]{0cm}{4cm} \rule[-.5cm]{8cm}{0cm}}
+    \caption{\textbf{Pre-grasp approach strategy.}
+             The gripper first moves to a safe pre-grasp pose directly above the cube
+             (left), and then descends straight down along the approach axis to the final
+             grasp pose (right), avoiding any lateral collision with the cube's side faces.}
+    \label{fig:pregrasp}
+\end{figure}
+
+% -----------------------------------------------------------------------
+\section{Open question: block stacking with a depth camera}
+\label{sec:openquestion}
+
+When simplifying assumptions (known object poses, simple convex shapes, static scene) cannot
+be fulfilled, the robot must rely on its onboard sensors to perceive the environment,
+estimate object poses, plan grasps, and execute motions robustly.
+A depth camera (\eg, an \ac{rgb}-D sensor such as an Intel RealSense or Microsoft Kinect)
+provides dense 3-D measurements of the scene as a point cloud or depth image.
+Below we describe the essential modules and procedures required in this setting.
+
+\subsection{Perception module}
+
+\paragraph{Point cloud acquisition and pre-processing.}
+The depth camera produces a raw point cloud $\mathcal{P} \subset \mathbb{R}^3$ at each frame.
+Standard pre-processing steps include voxel-grid downsampling (to reduce density while
+preserving geometry), statistical outlier removal (to suppress depth noise), and background
+subtraction via RANSAC-based ground-plane fitting \citep{thrun2005probabilistic}.
+
+\paragraph{Object detection and segmentation.}
+A learned segmentation model (\eg, Mask R-CNN applied to the \ac{rgb} channel, or
+PointNet \citep{qi2017pointnet} applied directly to the point cloud) identifies each cube's
+2-D or 3-D bounding region and assigns a semantic label.
+
+\paragraph{6-DoF pose estimation.}
+For each detected cube, a pose estimation module predicts the full 6-\ac{dof} pose
+$T_{\text{cube}}^{\text{camera}} \in SE(3)$.
+This can be achieved by (a) classical methods such as template matching or \ac{icp} between
+the observed partial point cloud and a known cube mesh, or (b) deep learning methods trained
+to regress pose from \ac{rgb}-D crops.
+The estimated pose is then transformed to the robot base frame using the known
+camera-to-base extrinsic calibration $T_{\text{base}}^{\text{camera}}$:
+$T_{\text{cube}}^{\text{base}} = T_{\text{base}}^{\text{camera}} \cdot T_{\text{cube}}^{\text{camera}}$.
+
+\subsection{Grasp planning module}
+
+With only an approximate object model (\eg, a bounding box), enumerating valid grasp candidates
+from the observed point cloud becomes necessary.
+Data-driven grasp planners such as GraspNet \citep{fang2020graspnet} predict a ranked set of
+6-\ac{dof} grasp poses $\{T_{\text{grasp},k}\}$ directly from the point cloud.
+Each candidate is then checked for kinematic reachability (\ie, whether a valid \ac{ik}
+solution exists) and for absence of collisions between the gripper geometry and the
+reconstructed scene.
+The highest-ranked feasible grasp is selected as $T_{\text{grasp}}$.
+
+\subsection{Motion planning module}
+
+The collision world is constructed dynamically from the depth image by maintaining a
+\emph{occupancy voxel grid} that is updated at every camera frame.
+This grid serves as the obstacle representation $\mathcal{O}$ for the motion planner.
+A sampling-based planner such as \ac{rrt}$^*$ \citep{karaman2011sampling} can then query
+this grid for collision checks during tree expansion.
+For time-critical re-planning (when the scene changes), a real-time variant such as
+Dynamic RRT or a gradient-based trajectory optimiser (\eg, CHOMP, which optimises
+trajectories by minimising obstacle-cost and smoothness potentials) can be used.
+
+\subsection{Closed-loop execution and error recovery}
+
+Even with accurate planning, execution errors accumulate due to calibration inaccuracies
+and gripper slip.
+A visual servoing loop uses continuous depth-camera feedback to correct the end-effector
+pose during the final approach: the observed \ac{tcp} position is compared to the desired
+grasp pose, and a Cartesian impedance controller applies corrective velocities.
+If grasp failure is detected (\eg, via force/torque feedback or a post-grasp depth check),
+the robot re-plans a new grasp from a fresh depth observation.
+
+\subsection{Summary of the full pipeline}
+
+\cref{tab:pipeline} summarises the complete module pipeline for the depth-camera-equipped
+robot.
+
+\begin{table}[t!]
+    \caption{\textbf{Module pipeline for depth-camera-based block stacking.}
+             Each row describes one module, its input, and its output.}
+    \label{tab:pipeline}
+    \centering
+    \small
+    \begin{tabular}{llll}
+        \toprule
+        \textbf{Step} & \textbf{Module} & \textbf{Input} & \textbf{Output} \\
+        \midrule
+        1 & Depth acquisition     & Sensor stream            & Raw point cloud $\mathcal{P}$ \\
+        2 & Pre-processing        & $\mathcal{P}$            & Filtered cloud $\hat{\mathcal{P}}$ \\
+        3 & Object detection      & RGB-D frame              & Segmented cube regions \\
+        4 & Pose estimation       & Cube segments            & $T_{\text{cube}}^{\text{base}}$ \\
+        5 & Grasp planning        & $\hat{\mathcal{P}}$, $T_{\text{cube}}^{\text{base}}$ & Grasp candidates $\{T_{\text{grasp},k}\}$ \\
+        6 & IK + reachability     & $\{T_{\text{grasp},k}\}$ & Valid grasp $T_{\text{grasp}}$ \\
+        7 & Voxel map update      & Depth image              & Obstacle grid $\mathcal{O}$ \\
+        8 & Motion planning       & $q_{\text{cur}}$, $T_{\text{grasp}}$, $\mathcal{O}$ & Trajectory $\tau$ \\
+        9 & Visual servoing       & Camera, $T_{\text{grasp}}$ & Corrected approach \\
+       10 & Error recovery        & Force/depth feedback     & Re-plan if needed \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+% -----------------------------------------------------------------------
+\bibliographystyle{plainnat}
+\bibliography{reference}
+
+\appendix
+\section{Appendix}
+
+\subsection{Inverse kinematics notes}
+
+For a 6-\ac{dof} robot arm, the \ac{ik} solution for a given $T_{\text{goal}}$ may not be
+unique.
+A numerical \ac{ik} solver (\eg, KDL, TRAC-IK) is typically preferred over analytic
+solutions for its generality.
+When multiple solutions exist, the one closest to the current joint configuration $q_{\text{cur}}$
+(in the L2 joint-space sense) is selected to minimise joint travel and avoid discontinuous
+jumps.
+
+\subsection{Choice of offset distance $d$}
+
+The offset $d$ used in the pre-grasp pose should satisfy $d > r_{\text{gripper}}$, where
+$r_{\text{gripper}}$ is the maximum radius of the gripper bounding sphere.
+A practical value of $d = 10$\,cm is sufficient for most parallel-jaw grippers operating
+on cubes with side lengths between 3\,cm and 10\,cm.
+
+\end{document}
